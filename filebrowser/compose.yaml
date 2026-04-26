@@ -1,0 +1,39 @@
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser
+    user: "1000:1000" # Quan trọng: Chạy với quyền user pi để tránh lỗi permission
+    ports:
+      - "8081:80"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      # Nơi lưu trữ dữ liệu chính (Trỏ thẳng vào thư mục data trên SSD)
+      - /mnt/ssd/drivedata:/srv
+      # File cấu hình và database của FileBrowser (Lưu trên SSD để bền hơn)
+      - /mnt/ssd/docker/filebrowser:/database
+      - /mnt/ssd/docker/filebrowser:/config
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M # Giới hạn RAM cực thấp cho Pi 3
+  syncthing:
+    container_name: syncthing
+    image: syncthing/syncthing:latest
+    user: "1000:1000" # Phải trùng với FileBrowser để cả 2 cùng đọc/ghi được file
+    hostname: pi3-sync
+    ports:
+      - "8384:8384" # Web UI quản lý
+      - "22000:22000/tcp"
+      - "22000:22000/udp"
+    volumes:
+      - /mnt/ssd/drivedata:/var/syncthing # Dữ liệu đồng bộ nằm trong folder của FileBrowser
+      - /mnt/ssd/docker/syncthing/config:/var/syncthing/config
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 150M # Giới hạn RAM để tránh vắt kiệt Pi 3
